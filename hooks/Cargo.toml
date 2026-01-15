@@ -1,0 +1,13 @@
+[package]
+name = "hooks"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+libc = { version = "0.2.180", features = ["extra_traits"] }
+redhook = "2.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"

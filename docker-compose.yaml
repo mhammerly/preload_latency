@@ -1,0 +1,26 @@
+version: "3.0"
+
+services:
+  workspace:
+    image: workspace
+    platform: linux/arm64
+    tty: true
+    volumes:
+      - type: bind
+        source: .
+        target: /repo
+      - type: bind
+        source: /Users/matt/.cargo/registry
+        target: /usr/local/cargo/registry
+      - type: bind
+        source: /Users/matt/.cargo/git
+        target: /usr/local/cargo/git
+    environment:
+      - BIGTABLE_EMULATOR_HOST=bigtable:8086
+    depends_on:
+      - bigtable
+
+  bigtable:
+    hostname: bigtable
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    entrypoint: ["/bin/sh", "-c", "gcloud beta emulators bigtable start --host-port=0.0.0.0:8086"]
