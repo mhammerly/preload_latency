@@ -6,7 +6,7 @@ unsafe extern "C" {
     -> *const c_char;
 }
 
-/// Create a `*const c_char` (`libc` C string) from a UTF8 Rust `&str`.
+/// Create a UTF8 Rust `&str` from a `*const c_char` (`libc` C string).
 pub unsafe fn utf8_from_ptr<'a>(ptr: *const c_char) -> Result<&'a str, std::str::Utf8Error> {
     unsafe { std::str::from_utf8(std::ffi::CStr::from_ptr(ptr).to_bytes()) }
 }
@@ -16,27 +16,21 @@ pub unsafe fn utf8_from_ptr<'a>(ptr: *const c_char) -> Result<&'a str, std::str:
 pub unsafe fn get_in_addr(addr: *const sockaddr) -> String {
     unsafe {
         let mut buf = [0; 45];
-        match (*addr).sa_family.into() {
+        let family = (*addr).sa_family.into();
+        let addr_ptr: *const c_void = match family {
             libc::AF_INET => {
                 let addr = (*addr.cast::<libc::sockaddr_in>()).sin_addr;
-                inet_ntop(
-                    libc::AF_INET,
-                    (&raw const addr).cast(),
-                    buf.as_mut_ptr().cast(),
-                    45,
-                )
+                (&raw const addr).cast()
             }
             libc::AF_INET6 => {
                 let addr = (*addr.cast::<libc::sockaddr_in6>()).sin6_addr;
-                inet_ntop(
-                    libc::AF_INET6,
-                    (&raw const addr).cast(),
-                    buf.as_mut_ptr().cast(),
-                    45,
-                )
+                (&raw const addr).cast()
             }
-            _ => buf.as_ptr(),
+            _ => std::ptr::null(),
         };
+        if !addr_ptr.is_null() {
+            inet_ntop(family, addr_ptr, buf.as_mut_ptr().cast(), 45);
+        }
         utf8_from_ptr(buf.as_ptr()).unwrap_or("").to_owned()
     }
 }

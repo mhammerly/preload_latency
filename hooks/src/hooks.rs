@@ -30,8 +30,9 @@ pub static LD_PRELOAD_INIT: extern "C" fn() = _ld_preload_init;
 pub extern "C" fn _ld_preload_init() {
     tracing_subscriber::fmt::init();
     tracing::info!("Initializing hooks...");
-    CONFIG.get_or_init(HookConfig::load);
-    CONFIG.wait().maybe_proactively_resolve_hosts();
+    CONFIG
+        .get_or_init(HookConfig::load)
+        .maybe_proactively_resolve_hosts();
     tracing::info!("Initialization done.");
 }
 
@@ -44,7 +45,7 @@ fn should_intercept_ip(ip: &String) -> bool {
     HOST_ADDRS
         .lock()
         .map(|addrs| addrs.contains(ip))
-        .unwrap_or(CONFIG.wait().hosts.is_empty())
+        .unwrap_or_else(|_| CONFIG.wait().hosts.is_empty())
 }
 
 fn should_intercept_socket(socket: c_int) -> bool {
