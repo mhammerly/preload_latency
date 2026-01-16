@@ -19,12 +19,12 @@ pub unsafe fn get_in_addr(addr: *const sockaddr) -> String {
         let family = (*addr).sa_family.into();
         let addr_ptr: *const c_void = match family {
             libc::AF_INET => {
-                let addr = (*addr.cast::<libc::sockaddr_in>()).sin_addr;
-                (&raw const addr).cast()
+                let sa_in = addr.cast::<libc::sockaddr_in>();
+                std::ptr::addr_of!((*sa_in).sin_addr).cast()
             }
             libc::AF_INET6 => {
-                let addr = (*addr.cast::<libc::sockaddr_in6>()).sin6_addr;
-                (&raw const addr).cast()
+                let sa_in6 = addr.cast::<libc::sockaddr_in6>();
+                std::ptr::addr_of!((*sa_in6).sin6_addr).cast()
             }
             _ => std::ptr::null(),
         };
