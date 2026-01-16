@@ -1,5 +1,5 @@
 use std::collections::BTreeSet;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{OnceLock, RwLock};
 
 use libc::{addrinfo, c_char, c_int, c_void, hostent, iovec, size_t, sockaddr, socklen_t, ssize_t};
 
@@ -9,10 +9,10 @@ use crate::util;
 static CONFIG: OnceLock<HookConfig> = OnceLock::new();
 
 // List of addresses resolved for the hosts in `HOSTS`.
-static HOST_ADDRS: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+static HOST_ADDRS: RwLock<BTreeSet<String>> = RwLock::new(BTreeSet::new());
 
 // List of sockets connected to the IP addresses in `HOST_ADDRS`.
-static HOST_SOCKETS: Mutex<BTreeSet<c_int>> = Mutex::new(BTreeSet::new());
+static HOST_SOCKETS: RwLock<BTreeSet<c_int>> = RwLock::new(BTreeSet::new());
 
 /// Runs [`_ld_preload_init`] when the library is loaded.
 #[unsafe(no_mangle)]
@@ -43,7 +43,7 @@ fn should_intercept_host(host: &str) -> bool {
 
 fn should_intercept_ip(ip: &String) -> bool {
     HOST_ADDRS
-        .lock()
+        .read()
         .map(|addrs| addrs.contains(ip))
         .unwrap_or_else(|_| CONFIG.wait().hosts.is_empty())
 }
@@ -54,7 +54,7 @@ fn should_intercept_socket(socket: c_int) -> bool {
         false
     } else {
         HOST_SOCKETS
-            .lock()
+            .read()
             .map(|sockets| sockets.contains(&socket))
             .unwrap_or(false)
     }
@@ -66,7 +66,7 @@ hook! {
             tracing::trace!("Entering getaddrinfo");
             let result = real!(getaddrinfo)(node, service, hints, res);
 
-            if result == 0 && let Ok(node_str) = util::utf8_from_ptr(node) && should_intercept_host(node_str) && let Ok(mut addrs) = HOST_ADDRS.lock() {
+            if result == 0 && let Ok(node_str) = util::utf8_from_ptr(node) && should_intercept_host(node_str) && let Ok(mut addrs) = HOST_ADDRS.write() {
                 tracing::info!("Resolving tracked host: {node_str}");
                 let mut addr = *res;
                 while !addr.is_null() {
@@ -107,7 +107,7 @@ hook! {
             let result = real!(connect)(socket, address, len);
 
             let ip = util::get_in_addr(address);
-            if should_intercept_ip(&ip) && let Ok(mut sockets) = HOST_SOCKETS.lock() {
+            if should_intercept_ip(&ip) && let Ok(mut sockets) = HOST_SOCKETS.write() {
                 tracing::info!("Connecting socket to tracked IP: {ip}");
                 tracing::info!("> {socket}");
                 sockets.insert(socket);
@@ -125,7 +125,7 @@ hook! {
             let result = real!(bind)(socket, address, address_len);
 
             let ip = util::get_in_addr(address);
-            if should_intercept_ip(&ip) && let Ok(mut sockets) = HOST_SOCKETS.lock() {
+            if should_intercept_ip(&ip) && let Ok(mut sockets) = HOST_SOCKETS.write() {
                 tracing::info!("Binding socket to tracked IP: {ip}");
                 tracing::info!("> {socket}");
                 sockets.insert(socket);
