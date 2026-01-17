@@ -18,6 +18,12 @@ pub struct HookConfig {
     ///
     /// Read from the `PRELOAD_LATENCY_MILLIS` environment variable.
     pub(crate) sleep_duration_millis: c_uint,
+
+    /// Duration of the "toggle period". If configured, interception oscillates between "disabled"
+    /// and "enabled" every `toggle_period` seconds.
+    ///
+    /// Read from the PRELOAD_LATENCY_TOGGLE_PERIOD` environment variable.
+    pub(crate) toggle_period: Option<c_uint>,
 }
 
 impl HookConfig {
@@ -32,9 +38,14 @@ impl HookConfig {
             .parse()
             .unwrap_or(200);
 
+        let toggle_period = std::env::var("PRELOAD_LATENCY_TOGGLE_PERIOD")
+            .ok()
+            .and_then(|s| s.parse().ok());
+
         Self {
             hosts,
             sleep_duration_millis,
+            toggle_period,
         }
     }
 

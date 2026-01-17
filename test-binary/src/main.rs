@@ -7,6 +7,9 @@ use std::time::Duration;
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // Uncomment to test toggle window
+    // tokio::time::sleep(Duration::from_secs(3)).await;
+
     // Send a request to GitHub using system DNS
     let client = reqwest::Client::builder().hickory_dns(false).build()?;
     let resp = client.get("https://github.com/robots.txt").send().await;

@@ -19,20 +19,26 @@ You can configure the hooks to an extent by setting certain environment variable
 ```
 $ # Only intercept sockets that connect to `github.com` or `bsky.app`.
 $ #
-$ # Default: intercepts sockets for all hosts.
+$ # Default: Intercept sockets for all hosts.
 $ export PRELOAD_LATENCY_HOSTS="github.com:bsky.app"
 
 $ # Force hosts in `PRELOAD_LATENCY_HOSTS` to be resolved in `getaddrinfo` during
 $ # program startup. Otherwise a binary that brings its own DNS resolver may not
 $ # have its sockets intercepted correctly.
 $ #
-$ # Default: wait for the binary to resolve hosts using `getaddrinfo` on its own.
+$ # Default: Wait for the binary to resolve hosts using `getaddrinfo` on its own.
 $ export PRELOAD_LATENCY_RESOLVE=1
 
-$ # Inject a sleep of 300 milliseconds
+$ # Inject a sleep of 300 milliseconds into send/recv/related libc calls for
+$ # intercepted sockets.
 $ #
 $ # Default: 200 milliseconds.
 $ export PRELOAD_LATENCY_MILLIS=300
+
+$ # Toggle interception from "disabled" to "enabled" every 30 seconds.
+$ #
+$ # Default: Unset, interception is always enabled
+$ export PRELOAD_LATENCY_TOGGLE_PERIOD=30
 
 $ # Debug the hooks themselves.
 $ export RUST_LOG=hooks=trace,info

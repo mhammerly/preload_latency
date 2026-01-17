@@ -1,9 +1,11 @@
 use std::collections::BTreeSet;
 use std::sync::{OnceLock, RwLock};
+use std::time::Duration;
 
 use libc::{addrinfo, c_char, c_int, c_void, hostent, iovec, size_t, sockaddr, socklen_t, ssize_t};
 
 use crate::config::HookConfig;
+use crate::toggle;
 use crate::util;
 
 static CONFIG: OnceLock<HookConfig> = OnceLock::new();
@@ -30,6 +32,12 @@ pub static LD_PRELOAD_INIT: extern "C" fn() = _ld_preload_init;
 pub extern "C" fn _ld_preload_init() {
     tracing_subscriber::fmt::init();
     tracing::info!("Initializing hooks...");
+    let config = CONFIG.get_or_init(HookConfig::load);
+    config.maybe_proactively_resolve_hosts();
+    if let Some(toggle_period) = config.toggle_period {
+        let toggle_period = Duration::from_secs(toggle_period.into());
+        toggle::init(toggle_period);
+    }
     CONFIG
         .get_or_init(HookConfig::load)
         .maybe_proactively_resolve_hosts();
@@ -57,6 +65,7 @@ fn should_intercept_socket(socket: c_int) -> bool {
             .read()
             .map(|sockets| sockets.contains(&socket))
             .unwrap_or(false)
+            && toggle::is_active()
     }
 }
 
