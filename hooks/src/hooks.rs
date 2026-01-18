@@ -252,3 +252,18 @@ hook! {
         }
     }
 }
+
+hook! {
+    unsafe fn close(fd: c_int) -> c_int => w_close {
+        unsafe {
+            tracing::trace!("Entering close");
+            let result = real!(close)(fd);
+
+            if result == 0 && let Ok(mut sockets) = HOST_SOCKETS.write() && sockets.remove(&fd) {
+                tracing::debug!("Closed socket {fd}");
+            }
+
+            result
+        }
+    }
+}
