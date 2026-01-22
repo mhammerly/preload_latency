@@ -38,9 +38,6 @@ pub extern "C" fn _ld_preload_init() {
         let toggle_period = Duration::from_secs(toggle_period.into());
         toggle::init(toggle_period);
     }
-    CONFIG
-        .get_or_init(HookConfig::load)
-        .maybe_proactively_resolve_hosts();
     tracing::info!("Initialization done.");
 }
 
