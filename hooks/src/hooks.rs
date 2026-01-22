@@ -188,7 +188,7 @@ hook! {
 }
 
 hook! {
-    unsafe fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: socklen_t) -> ssize_t => w_recvfrom {
+    unsafe fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> ssize_t => w_recvfrom {
         unsafe {
             tracing::trace!("Entering recvfrom");
             if should_intercept_socket(socket) {
