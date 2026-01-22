@@ -8,17 +8,21 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     // Uncomment to test toggle window
-    // tokio::time::sleep(Duration::from_secs(3)).await;
+    tokio::time::sleep(Duration::from_secs(3)).await;
 
     // Send a request to GitHub using system DNS
     let client = reqwest::Client::builder().hickory_dns(false).build()?;
     let resp = client.get("https://github.com/robots.txt").send().await;
     tracing::info!("{resp:#?}");
 
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
     // Send a request to bsky using hickory-dns
     let client = reqwest::Client::builder().hickory_dns(true).build()?;
     let resp = client.get("https://bsky.app/robots.txt").send().await;
     tracing::info!("{resp:#?}");
+
+    tokio::time::sleep(Duration::from_secs(2)).await;
 
     // make a bigtable client
     let connection = bigtable::BigTableConnection::new(
